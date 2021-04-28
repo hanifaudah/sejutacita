@@ -1,10 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { ERRORS } = require("../etc/constants");
 
-const handleValidationError = (error, response) => {
-  if (error) response.status(400).send(error.details[0].message);
-};
-
 const getErrorResponseFormat = (errorMessage) => {
   return {
     message: errorMessage,
@@ -20,7 +16,6 @@ const getServerErrorResponse = (errorMessage) => {
 // };
 
 module.exports = {
-  handleValidationError,
   getServerErrorResponse,
   getErrorResponseFormat,
 };

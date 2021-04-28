@@ -11,7 +11,6 @@ const {
   loginValidation,
 } = require("./validation");
 const {
-  handleValidationError,
   getServerErrorResponse,
   getErrorResponseFormat,
 } = require("../etc/utils");
@@ -23,20 +22,12 @@ const User = require("../models/user");
 const router = express.Router();
 
 // @GET /users/:userId
-router.get("/:userId", middlewares.verifyToken, async (req, res) => {
+router.get("/:userId", [middlewares.verifyToken, middlewares.privateRoute("userId")], async (req, res) => {
   const { userId } = req.params;
-  // get all users
-  if (userId) {
-    const userList = await User.find().select(["-password", "-__v"]);
-    res.send(userList);
-  }
-  // get user by id
-  else {
-    const userById = await User.findOne({ _id: userId });
-    if (!userById)
-      res.status(400).send(getErrorResponseFormat(ERRORS.USER_NOT_FOUND));
-    else res.send(userById);
-  }
+  const userById = await User.findOne({ _id: userId });
+  if (!userById)
+    res.status(400).send(getErrorResponseFormat(ERRORS.USER_NOT_FOUND));
+  else res.send(userById);
 });
 
 // @PATCH /users/:userId
@@ -49,10 +40,11 @@ router.patch(
     if (!user)
       res.status(400).send(getErrorResponseFormat(ERRORS.USER_NOT_FOUND));
     else {
-      user = {
-        ...user,
+      const data = {
+        ...user._doc,
         ...req.body,
-      };
+      }
+      user.username = data.username
       try {
         const data = await user.save();
         res.send(data);
@@ -67,8 +59,10 @@ router.patch(
 router.post("/register", async (req, res) => {
   // Validate data
   const { error } = registerValidation(req.body);
-  handleValidationError(error, res);
-
+  if (error) {
+    res.status(400).send(error.details[0].message);
+    return;
+  }
   // extract user data
   const { username, password } = req.body;
 
@@ -97,7 +91,10 @@ router.post("/register", async (req, res) => {
 // @POST /users/login/
 router.post("/login", async (req, res) => {
   const { error } = loginValidation(req.body);
-  handleValidationError(error, res);
+  if (error) {
+    res.status(400).send(error.details[0].message);
+    return;
+  }
 
   try {
     // Get user
@@ -125,12 +122,12 @@ router.post("/login", async (req, res) => {
 router.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.body;
   const verifiedUser = jwt.verify(refreshToken, process.env.SECRET_KEY);
-  if (!verifiedUser)
+  if (!verifiedUser._id)
     res.status(401).send({
       message: ERRORS.UNAUTHORIZED,
     });
   else {
-    const token = jwt.sign({ ...verifiedUser }, process.env.SECRET_KEY, {
+    const token = jwt.sign({ _id: verifiedUser._id }, process.env.SECRET_KEY, {
       expiresIn: config.tokenLifeSpan,
     });
     res.send({ token });
@@ -150,7 +147,7 @@ router.delete(
       res.status(400).send(getErrorResponseFormat(ERRORS.USER_NOT_FOUND));
     else {
       try {
-        const data = await user.delete();
+        await user.delete();
         res.send({
           message: `${user.username} has been deleted`,
         });
@@ -160,5 +157,11 @@ router.delete(
     }
   }
 );
+
+// @GET /users/
+router.get("/", [middlewares.verifyToken, middlewares.adminOnly], async (req, res) => {
+  const userList = await User.find().select(["-password", "-__v"]);
+  res.send(userList);
+});
 
 module.exports = router;

@@ -12,6 +12,7 @@ app.use(express.json());
 
 // routes
 app.use("/users", routes.userRoutes);
+app.use("/admin", routes.adminRoutes);
 
 // db connection
 mongoose.connect(process.env.DB_CONNECTION, {

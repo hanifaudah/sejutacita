@@ -1,11 +1,12 @@
 const User = require("../models/user");
 const { ERRORS } = require("../etc/constants")
+const { isAdmin } = require("../routes/validation")
 
 const privateRoute = (userIdParamName) => {
-  return (req, res, next) => {
-    const user = req.user;
+  return async (req, res, next) => {
+    const { _id } = req.user;
     const userIdParam = req.params[userIdParamName]
-    if (user._id === userIdParam) next()
+    if (_id === userIdParam || await isAdmin(_id)) next()
     else res.status(401).send({
       message: ERRORS.UNAUTHORIZED
     })

@@ -24,13 +24,13 @@ const loginValidation = (data) => {
 };
 
 const isUniqueUser = async (username) => {
-  const usernameExists = await User.findOne({ username });
-  return !usernameExists;
+  const user = await User.findOne({ username });
+  return !user
 };
 
-const isAdmin = async (username) => {
-  const role = await User.findOne({ username });
-  return role === ROLES.ADMIN;
+const isAdmin = async (_id) => {
+  const user = await User.findOne({ _id });
+  return user.role === ROLES.ADMIN;
 };
 
 module.exports = {
