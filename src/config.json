@@ -1,0 +1,4 @@
+{
+  "tokenLifeSpan": "15m",
+  "refreshTokenLifeSpan": "1d"
+}

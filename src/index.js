@@ -1,12 +1,23 @@
-// Imports
+// imports
 const express = require("express");
 const routes = require("./routes");
+const mongoose = require("mongoose");
+require("dotenv").config();
 
-// Base app
+// base app
 const app = express();
 
-// Routes
-app.use("/user", routes.userRoutes);
+// middlewares
+app.use(express.json());
 
-// Port
+// routes
+app.use("/users", routes.userRoutes);
+
+// db connection
+mongoose.connect(process.env.DB_CONNECTION, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// port
 app.listen(8000);
